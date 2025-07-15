@@ -82,6 +82,8 @@ export const login = async(req,res)=>{
                 email: user.email,
                 role: user.role
             })
+        }else{
+            res.status(401).json({message: "Invalid email or password"});
         }
     }catch(err){
         console.log("Error in login controller",error.message);
@@ -104,5 +106,39 @@ export const logout = async(req,res)=>{
         res.json({message:"Logged out successfully"});
     }catch(error){
         res.status(500).json({message: "Server error",error:error.message});
+    }
+}
+
+//this will refresh/recreate the access token
+export const refreshToken = async (req,res) => {
+    try{
+        const refreshToken = req.cookies.refreshToken;
+
+        if(!refreshToken){
+            return res.status(401).json({message: "No refresh Token"});
+
+        }
+        const decoded=jwt.verify(refreshToken,process.env.REFRESH_TOKEN_SECRET);
+        const storedToken = await redis.get(`refresh_token:${decoded.userId}`);
+        
+        if(storedToken!== refreshToken){
+            return res.status(401).json({message : "Invalid refresh Token"});
+
+        }
+        const accessToken=jwt.sign({userId},process.env.ACCESS_TOKEN_SECRET,{expiresIn:"15m"});
+
+        res.cookie("accessToken", accessToken,{
+        httpOnly: true, //prevents attacks xss, prevents javascripts attacks , cross site scripting attacks
+        secure:process.env.NODE_ENV === "production",
+        sameSite: "strict", //prevents csrf
+        maxAge: 15*60*1000, //15 min
+        });
+        
+        res.json({message: "Token refreshed successfully"});
+
+
+    }catch(err){
+        console.log("Error in refreshToken Controller", error.message);
+        res.json({message:"Error while refreshing token ", error: error.message});
     }
 }
