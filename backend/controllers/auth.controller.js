@@ -142,3 +142,6 @@ export const refreshToken = async (req,res) => {
         res.json({message:"Error while refreshing token ", error: error.message});
     }
 }
+
+
+// export const getProfile = async(req,res)=>
