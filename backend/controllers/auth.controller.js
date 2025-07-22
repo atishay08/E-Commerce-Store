@@ -61,6 +61,11 @@ export const signup = async(req,res)=>{
     }catch(error){
         console.log("Error in signup controller",error.message);
 
+        if (error.name === "ValidationError") {
+        const messages = Object.values(error.errors).map(val => val.message);
+        return res.status(400).json({ message: messages.join(", ") });
+    }
+
         res.status(500).json(error.message);
     }
 }
@@ -85,7 +90,7 @@ export const login = async(req,res)=>{
         }else{
             res.status(401).json({message: "Invalid email or password"});
         }
-    }catch(err){
+    }catch(error){
         console.log("Error in login controller",error.message);
         res.status(500).json(error.message);
 
@@ -125,6 +130,8 @@ export const refreshToken = async (req,res) => {
             return res.status(401).json({message : "Invalid refresh Token"});
 
         }
+        const userId = decoded.userId;
+
         const accessToken=jwt.sign({userId},process.env.ACCESS_TOKEN_SECRET,{expiresIn:"15m"});
 
         res.cookie("accessToken", accessToken,{
