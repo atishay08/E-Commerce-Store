@@ -1,5 +1,7 @@
 import Product from '../models/product.model.js'
 import cloudinary from '../lib/cloudinary.js'
+import redis from '../lib/redis.js';
+
 
 export const getAllProducts=async(req,res)=>{
     try{
@@ -69,7 +71,7 @@ export const createProduct=async(req,res)=>{
 
 export const deleteProduct = async(req,res)=>{
     try{
-        const product = await Product.findById(redis.params.id);
+        const product = await Product.findById(req.params.id);
 
         if(!product){
             return res.status(404).json({message: "Product not found"});
@@ -111,7 +113,7 @@ export const getRecommendedProducts=async(req,res)=>{
             },
         ]);
 
-        res.json(products);
+        res.json(product);
 
     }catch(error){
         console.log("Error in getRecommendedProducts controller", error.message);
