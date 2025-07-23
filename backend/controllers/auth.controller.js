@@ -20,17 +20,22 @@ const storeRefreshToken = async(userId,refreshToken) =>{
 
 }
 
+
 const setCookies = (res,accessToken,refreshToken)=>{
+    const isProduction = process.env.NODE_ENV === "production";
+
     res.cookie("accessToken", accessToken,{
-        httpOnly: true, //prevents attacks xss, prevents javascripts attacks , cross site scripting attacks
-        secure:process.env.NODE_ENV === "production",
-        sameSite: "strict", //prevents csrf
+        httpOnly: true,
+        secure: isProduction,
+        // 'lax' in development and 'none' in production
+        sameSite: isProduction ? "none" : "lax",
         maxAge: 15*60*1000, //15 min
     })
     res.cookie("refreshToken", refreshToken,{
-        httpOnly: true, //prevents attacks xss, prevents javascripts attacks , cross site scripting attacks
-        secure:process.env.NODE_ENV === "production",
-        sameSite: "strict", //prevents csrf
+        httpOnly: true,
+        secure: isProduction,
+
+        sameSite: isProduction ? "none" : "lax",
         maxAge: 7*24*60*60*1000, //7 days
     })
 }
@@ -98,7 +103,6 @@ export const login = async(req,res)=>{
 }
 
 export const logout = async(req,res)=>{
-    // console.log("req.cookies:", req.cookies); 
     try{
         
         const refreshToken = req.cookies.refreshToken;
@@ -114,7 +118,7 @@ export const logout = async(req,res)=>{
     }
 }
 
-//this will refresh/recreate the access token
+
 export const refreshToken = async (req,res) => {
     try{
         const refreshToken = req.cookies.refreshToken;
@@ -131,14 +135,16 @@ export const refreshToken = async (req,res) => {
 
         }
         const userId = decoded.userId;
+        const isProduction = process.env.NODE_ENV === "production";
 
         const accessToken=jwt.sign({userId},process.env.ACCESS_TOKEN_SECRET,{expiresIn:"15m"});
 
         res.cookie("accessToken", accessToken,{
-        httpOnly: true, //prevents attacks xss, prevents javascripts attacks , cross site scripting attacks
-        secure:process.env.NODE_ENV === "production",
-        sameSite: "strict", //prevents csrf
-        maxAge: 15*60*1000, //15 min
+            httpOnly: true,
+            secure: isProduction,
+            // 'lax' in development and 'none' in production
+            sameSite: isProduction ? "none" : "lax",
+            maxAge: 15*60*1000, //15 min
         });
         
         res.json({message: "Token refreshed successfully"});
@@ -151,4 +157,10 @@ export const refreshToken = async (req,res) => {
 }
 
 
-// export const getProfile = async(req,res)=>
+export const getProfile = async (req, res) => {
+    try {
+        res.json(req.user);
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
